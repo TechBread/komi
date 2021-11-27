@@ -2,6 +2,8 @@ package laba;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,15 +15,11 @@ public class Main {
         //the greatest change
         List<List<Double>> graph = myG.dist;
 
-        List<List<Double>> PrimGraph = Prim(graph);
+        List<List<Double>> PrimGraph = Kristofides.Prim(graph);
 
-        List<List<Integer>> multyGraph = ParosochetIzO(PrimGraph, graph);
+        List<Integer> circle = Kristofides.GetCicle(PrimGraph,graph);
 
-        List<Integer> EulerovCircle = EulerCircle(multyGraph.size(), multyGraph);
-
-        List<Integer> circle = GamilCircle(EulerovCircle, graph.size());
-
-        System.out.println(CircleLength(circle, myG, n));
+        //System.out.println(CircleLength(circle, myG, n));
 
         return circle;
     }
@@ -49,15 +47,15 @@ public class Main {
             if(!visited[i]) {
                 buffer.add(i);
                 visited[i] = true;
-                if(buffer.size() == podGraph.size()) {
+                if (buffer.size() == podGraph.size()) {
                     if (result.size() == 0) {
                         result.addAll(buffer);
                     } else {
                         double cost = 0.0;
                         double resultCost = 0.0;
                         for (int j = 0; j < buffer.size(); j += 2) {
-                            cost += podGraph.get(buffer.get(j)).get(buffer.get(j+1));
-                            resultCost += podGraph.get(result.get(j)).get(result.get(j+1));
+                            cost += podGraph.get(buffer.get(j)).get(buffer.get(j + 1));
+                            resultCost += podGraph.get(result.get(j)).get(result.get(j + 1));
                         }
 
                         if (resultCost > cost) {
@@ -65,11 +63,11 @@ public class Main {
                             result.addAll(buffer);
                         }
                     }
-                }else {
+                } else {
                     DepthSearchParosochet(podGraph, visited, buffer, result);
                 }
                 visited[i] = false;
-                buffer.remove(buffer.size()-1);
+                buffer.remove(buffer.size() - 1);
             }
         }
 
@@ -210,8 +208,8 @@ public class Main {
         System.out.println();
     }
 
-    static int CircleLength(List<Integer> circle, Graph myG, int n){
-        int sum = 0;
+    static Double CircleLength(List<Integer> circle, Graph myG, int n){
+        Double sum = 0.0;
         //int m = circle.size();
         for (int i = 0; i < n - 1; i++) {
             sum += myG.dist.get(circle.get(i)).get(circle.get(i+1));
@@ -226,8 +224,8 @@ public class Main {
             if(circle.isEmpty()) {
                 circle.addAll(tryCircle);
             } else {
-                int tmpLength = CircleLength(tryCircle, myG, n);
-                int circleLength = CircleLength(circle, myG, n);
+                Double tmpLength = CircleLength(tryCircle, myG, n);
+                Double circleLength = CircleLength(circle, myG, n);
                 if(tmpLength < circleLength){
                     circle.clear();
                     circle.addAll(tryCircle);
@@ -260,7 +258,7 @@ public class Main {
 
 
 
-        System.out.println(CircleLength(circle, myG, n));
+        //System.out.println(CircleLength(circle, myG, n));
         return circle;
     }
 
@@ -294,7 +292,7 @@ public class Main {
             vertLeft--;
         }
 
-        System.out.println(CircleLength(circle, myG, n));
+       //System.out.println(CircleLength(circle, myG, n));
         return circle;
     }
 
@@ -352,18 +350,182 @@ public class Main {
     public static void main(String[] args) {
 
         long mainTID = Thread.currentThread().getId();
-
+        Graph myGraph;
         Scanner myScan = new Scanner(System.in);
-        System.out.println("Input n:");
-        int n = Integer.parseInt(myScan.nextLine());
-        Graph myGraph = GenerateGraph(n);
+
+        System.out.println("How to input graph?: 1 - generate random graph, 2 - get from file");
+        int inputWay = Integer.parseInt(myScan.nextLine());
+        int n;
+        int testCount = 0;
+        if(inputWay == 1) {
+            System.out.println("Input n:");
+            n = Integer.parseInt(myScan.nextLine());
+            System.out.println("Input number of tests");
+            testCount = Integer.parseInt(myScan.nextLine());
+            myGraph = GenerateGraph(n);
+        } else {
+            try {
+                File inputFile = new File("input.txt");
+                Scanner myReader = new Scanner(inputFile);
+                n = Integer.parseInt(myReader.nextLine());
+                List<List<Double>> inputGraph = new ArrayList<>();
+                while (myReader.hasNextLine()) {
+                    String data = myReader.nextLine();
+                    List<Double> row = new ArrayList<>();
+                    String[] dataArray = data.split(" ");
+                    for (int i = 0; i < dataArray.length; i++) {
+                        row.add(Double.parseDouble(dataArray[i]));
+                    }
+                    inputGraph.add(row);
+                }
+                myGraph = new Graph(inputGraph);
+                myReader.close();
+            } catch (FileNotFoundException e) {
+                System.out.println("An error occurred.");
+                e.printStackTrace();
+                n = 1;
+                myGraph = GenerateGraph(1);
+            }
+        }
         List<Integer> gamilCircle;
 
         long startT;
         long startPT;
         long endT;
         long endPT;
-/*
+
+
+        if (inputWay == 2){
+            testCount = 1;
+        }
+        int testATime = 0;
+        int testAThreadTime = 0;
+        int testBTime = 0;
+        int testBThreadTime = 0;
+        int testCTime = 0;
+        int testCThreadTime = 0;
+
+        Integer sovpB = 0;
+        Integer sovpC = 0;
+
+        Double sumOtclB = 0.0;
+        Double sumOtclC = 0.0;
+
+        Integer bolshe3del2 = 0;
+
+        for(int i = 0; i < testCount; i++) {
+            if(inputWay == 1) {
+                myGraph = GenerateGraph(n);
+            }
+            System.out.println("Test:"+i);
+            startT = System.nanoTime();
+            startPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
+            gamilCircle = A_TRY_HARD(n, myGraph);
+            //WriteOutput(gamilCircle);
+            endT = System.nanoTime();
+            endPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
+            Double lenghtA = CircleLength(gamilCircle,  myGraph, n);
+            testATime += (endT - startT)/1000000;
+            testAThreadTime += (endPT - startPT)/1000000;
+
+            //System.out.println("B:");
+            startT = System.nanoTime();
+            startPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
+            gamilCircle = B_GREED(n, myGraph);
+            //WriteOutput(gamilCircle);
+            endT = System.nanoTime();
+            endPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
+            Double lenghtB = CircleLength(gamilCircle,  myGraph, n);
+            testBTime += (endT - startT)/1000000;
+            testBThreadTime += (endPT - startPT)/1000000;
+
+            //System.out.println("C:");
+            startT = System.nanoTime();
+            startPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
+            gamilCircle = C_MADNESS(n, myGraph);
+            //WriteOutput(gamilCircle);
+            endT = System.nanoTime();
+            endPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
+            Double lenghtC = CircleLength(gamilCircle,  myGraph, n);
+            testCTime += (endT - startT)/1000000;
+            testCThreadTime += (endPT - startPT)/1000000;
+
+            if(lenghtA.equals(lenghtB))
+                sovpB++;
+            if(lenghtA.equals(lenghtC))
+                sovpC++;
+
+            sumOtclB += (lenghtB - lenghtA)/lenghtA;
+
+            Double otclC = (lenghtC - lenghtA)/lenghtA;
+
+            if(otclC > 0.5)
+                bolshe3del2++;
+
+            sumOtclC += otclC;
+        }
+        System.out.println("System thread time for A");
+        System.out.println(testATime/testCount);
+        System.out.println("System time for A");
+        System.out.println(testAThreadTime/testCount);
+        System.out.println("System thread time for B");
+        System.out.println(testBTime/testCount);
+        System.out.println("System time for B");
+        System.out.println(testBThreadTime/testCount);
+        System.out.println("System thread time for C");
+        System.out.println(testCTime/testCount);
+        System.out.println("System time for C");
+        System.out.println(testCThreadTime/testCount);
+        System.out.println("SovpB = " + sovpB);
+        System.out.println("SovpC = " + sovpC);
+        System.out.println("Avg otcl B = " + sumOtclB/testCount);
+        System.out.println("Avg otcl C = " + sumOtclC/testCount);
+        System.out.println("Kristofides error count = " + bolshe3del2);
+    }
+
+/*    public static void main(String[] args) {
+
+        long mainTID = Thread.currentThread().getId();
+        Graph myGraph;
+        Scanner myScan = new Scanner(System.in);
+        System.out.println("How to input graph?: 1 - generate random graph, 2 - get from file");
+        int inputWay = Integer.parseInt(myScan.nextLine());
+        int n;
+        if(inputWay == 1) {
+            System.out.println("Input n:");
+            n = Integer.parseInt(myScan.nextLine());
+            myGraph = GenerateGraph(n);
+        } else {
+            try {
+                File inputFile = new File("input.txt");
+                Scanner myReader = new Scanner(inputFile);
+                n = Integer.parseInt(myReader.nextLine());
+                List<List<Double>> inputGraph = new ArrayList<>();
+                while (myReader.hasNextLine()) {
+                    String data = myReader.nextLine();
+                    List<Double> row = new ArrayList<>();
+                    String[] dataArray = data.split(" ");
+                    for (int i = 0; i < dataArray.length; i++) {
+                        row.add(Double.parseDouble(dataArray[i]));
+                    }
+                    inputGraph.add(row);
+                }
+                myGraph = new Graph(inputGraph);
+                myReader.close();
+            } catch (FileNotFoundException e) {
+                System.out.println("An error occurred.");
+                e.printStackTrace();
+                n = 1;
+                myGraph = GenerateGraph(1);
+            }
+        }
+        List<Integer> gamilCircle;
+
+        long startT;
+        long startPT;
+        long endT;
+        long endPT;
+
         System.out.println("A:");
         startT = System.nanoTime();
         startPT = ManagementFactory.getThreadMXBean().getThreadCpuTime(mainTID);
@@ -386,7 +548,7 @@ public class Main {
         System.out.println("System thread time");
         System.out.println(endPT-startPT);
         System.out.println("System time");
-        System.out.println(endT-startT);*/
+        System.out.println(endT-startT);
 
         System.out.println("C:");
         startT = System.nanoTime();
@@ -399,5 +561,5 @@ public class Main {
         System.out.println(endPT-startPT);
         System.out.println("System time");
         System.out.println(endT-startT);
-    }
+    }*/
 }

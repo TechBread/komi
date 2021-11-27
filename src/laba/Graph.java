@@ -19,6 +19,31 @@ public class Graph {
         }
     }
 
+
+    public static List<List<Double>> getCopyGraph(int n, List<List<Double>> graph) {
+        List<List<Double>> result = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            result.add(new ArrayList<>());
+            for (int j = 0; j < n; j++) {
+                result.get(i).add(graph.get(i).get(j));
+            }
+        }
+
+        return result;
+    }
+
+
+    public static List<List<Double>> getEmptyGraph(int n){
+        List<List<Double>> result = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            result.add(new ArrayList<>());
+            for (int j = 0; j < n; j++) {
+                result.get(i).add(0.0);
+            }
+        }
+        return result;
+    }
+
     public void Print(){
         for (int i = 0; i < dist.size(); i++) {
             for (int j = 0; j < dist.size(); j++) {
